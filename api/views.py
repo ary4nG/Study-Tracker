@@ -42,11 +42,7 @@ class LogoutView(APIView):
 
 
 class SubjectViewSet(viewsets.ModelViewSet):
-    """
-    CRUD for subjects, scoped to authenticated user.
-    GET/POST  /api/subjects/
-    GET/PATCH/DELETE  /api/subjects/{id}/
-    """
+    """CRUD for subjects, scoped to authenticated user."""
     serializer_class = SubjectSerializer
     permission_classes = [IsAuthenticated]
 
@@ -57,16 +53,36 @@ class SubjectViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
+class TopicViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for topics, user-scoped via double-underscore Subject FK.
+    GET/POST /api/topics/
+    GET/PATCH/DELETE /api/topics/{id}/
+    Optional filter: GET /api/topics/?subject={id}
+    """
+    serializer_class = TopicSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Double-underscore traversal ensures user only sees their own topics
+        qs = Topic.objects.filter(subject__user=self.request.user)
+        subject_id = self.request.query_params.get('subject')
+        if subject_id:
+            qs = qs.filter(subject_id=subject_id)
+        return qs
+
+    def perform_create(self, serializer):
+        # Validate ownership before creating — prevents cross-user topic injection
+        subject_id = self.request.data.get('subject')
+        subject = get_object_or_404(Subject, pk=subject_id, user=self.request.user)
+        serializer.save(subject=subject)
+
+
 class ParseSyllabusView(APIView):
-    """
-    POST /api/subjects/{subject_id}/parse-syllabus/
-    Body: {"topics": ["Topic A", "Topic B", ...]}
-    Returns the list of created Topic objects.
-    """
+    """POST /api/subjects/{subject_id}/parse-syllabus/ — bulk-creates topics."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request, subject_id):
-        # 404 if subject doesn't belong to this user — data isolation
         subject = get_object_or_404(Subject, pk=subject_id, user=request.user)
 
         topic_names = request.data.get('topics', [])
@@ -76,7 +92,6 @@ class ParseSyllabusView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Strip and filter blank entries
         cleaned = [n.strip() for n in topic_names if isinstance(n, str) and n.strip()]
         if not cleaned:
             return Response(

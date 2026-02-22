@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
+import SubjectDetailPage from './pages/SubjectDetailPage';
 
 function App() {
   return (
@@ -21,11 +22,17 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/subjects/:id"
+            element={
+              <ProtectedRoute>
+                <SubjectDetailPage />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Redirect root to dashboard (ProtectedRoute handles auth check) */}
+          {/* Redirects */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-          {/* Catch-all */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>

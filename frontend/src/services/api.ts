@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { SubjectFormData } from '../types';
+import type { SubjectFormData, Topic } from '../types';
 
 /** Read the csrftoken cookie that Django sets after login. */
 function getCsrfToken(): string {
@@ -35,15 +35,25 @@ export const auth = {
 
 export const subjects = {
     list: () => API.get('/api/subjects/'),
+    get: (id: number) => API.get(`/api/subjects/${id}/`),
     create: (data: SubjectFormData) => API.post('/api/subjects/', data),
     update: (id: number, data: Partial<SubjectFormData>) =>
         API.patch(`/api/subjects/${id}/`, data),
     remove: (id: number) => API.delete(`/api/subjects/${id}/`),
 };
 
+export const topics = {
+    list: (subjectId: number) => API.get(`/api/topics/?subject=${subjectId}`),
+    create: (subjectId: number, name: string) =>
+        API.post('/api/topics/', { subject: subjectId, name }),
+    update: (id: number, data: Partial<Topic>) =>
+        API.patch(`/api/topics/${id}/`, data),
+    remove: (id: number) => API.delete(`/api/topics/${id}/`),
+};
+
 export const syllabusParser = {
-    save: (subjectId: number, topics: string[]) =>
-        API.post(`/api/subjects/${subjectId}/parse-syllabus/`, { topics }),
+    save: (subjectId: number, topicNames: string[]) =>
+        API.post(`/api/subjects/${subjectId}/parse-syllabus/`, { topics: topicNames }),
 };
 
 export default API;
