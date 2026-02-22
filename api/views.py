@@ -1,18 +1,16 @@
 from django.contrib.auth import logout
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Subject
-from .serializers import SubjectSerializer
+from .models import Subject, Topic
+from .serializers import SubjectSerializer, TopicSerializer
 
 
 class UserDetailView(APIView):
-    """
-    GET /api/auth/user/
-    Returns the currently authenticated user's profile data.
-    """
+    """GET /api/auth/user/ — returns the authenticated user's profile."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -35,10 +33,7 @@ class UserDetailView(APIView):
 
 
 class LogoutView(APIView):
-    """
-    POST /api/auth/logout/
-    Logs out the current user and clears the session.
-    """
+    """POST /api/auth/logout/ — clears the Django session."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -48,7 +43,7 @@ class LogoutView(APIView):
 
 class SubjectViewSet(viewsets.ModelViewSet):
     """
-    CRUD for subjects. Automatically scoped to the authenticated user.
+    CRUD for subjects, scoped to authenticated user.
     GET/POST  /api/subjects/
     GET/PATCH/DELETE  /api/subjects/{id}/
     """
@@ -56,9 +51,42 @@ class SubjectViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # CRITICAL: always filter by user — data isolation
         return Subject.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Auto-assign user on create — never trust client-supplied user_id
         serializer.save(user=self.request.user)
+
+
+class ParseSyllabusView(APIView):
+    """
+    POST /api/subjects/{subject_id}/parse-syllabus/
+    Body: {"topics": ["Topic A", "Topic B", ...]}
+    Returns the list of created Topic objects.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, subject_id):
+        # 404 if subject doesn't belong to this user — data isolation
+        subject = get_object_or_404(Subject, pk=subject_id, user=request.user)
+
+        topic_names = request.data.get('topics', [])
+        if not topic_names or not isinstance(topic_names, list):
+            return Response(
+                {'error': 'topics must be a non-empty list'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Strip and filter blank entries
+        cleaned = [n.strip() for n in topic_names if isinstance(n, str) and n.strip()]
+        if not cleaned:
+            return Response(
+                {'error': 'No valid topic names provided'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        topics = Topic.objects.bulk_create([
+            Topic(subject=subject, name=name) for name in cleaned
+        ])
+
+        serializer = TopicSerializer(topics, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from .models import Subject
+from .models import Subject, Topic
+
+
+class TopicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Topic
+        fields = ['id', 'subject', 'name', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'subject', 'created_at', 'updated_at']
 
 
 class SubjectSerializer(serializers.ModelSerializer):
@@ -11,8 +18,6 @@ class SubjectSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def get_topic_count(self, obj):
-        # Topics model added in Story 1.3 via related_name='topics'
-        # Return 0 safely until then
         try:
             return obj.topics.count()
         except Exception:

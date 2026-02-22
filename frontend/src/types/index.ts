@@ -23,3 +23,12 @@ export interface SubjectFormData {
   description?: string;
   color?: string;
 }
+
+export interface Topic {
+  id: number;
+  subject: number;
+  name: string;
+  status: 'not_started' | 'in_progress' | 'mastered';
+  created_at: string;
+  updated_at: string;
+}

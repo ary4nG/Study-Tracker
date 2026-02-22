@@ -41,4 +41,9 @@ export const subjects = {
     remove: (id: number) => API.delete(`/api/subjects/${id}/`),
 };
 
+export const syllabusParser = {
+    save: (subjectId: number, topics: string[]) =>
+        API.post(`/api/subjects/${subjectId}/parse-syllabus/`, { topics }),
+};
+
 export default API;
