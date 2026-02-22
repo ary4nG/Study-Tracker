@@ -1,0 +1,38 @@
+# ─── AI / Agent tooling ───────────────────────────────────────────────────────
+.agent/
+.agents/
+_agents/
+.claude/
+.gemini/
+.trae/
+_bmad/
+_bmad-output/
+.github/
+
+# ─── Python / Django ──────────────────────────────────────────────────────────
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.log
+db.sqlite3
+.env
+media/
+staticfiles/
+
+# ─── Node / React ─────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# ─── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
