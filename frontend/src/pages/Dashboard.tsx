@@ -4,6 +4,7 @@ import { subjects as subjectsApi } from '../services/api';
 import type { Subject } from '../types';
 import SubjectCard from '../components/features/SubjectCard';
 import SubjectForm from '../components/features/SubjectForm';
+import StudyTimerWidget from '../components/common/StudyTimerWidget';
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
@@ -42,6 +43,7 @@ export default function Dashboard() {
                 <div style={{ maxWidth: '1100px', margin: '0 auto', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontWeight: 700, fontSize: '18px', color: '#2563EB' }}>SyllabusTracker</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <StudyTimerWidget />
                         {user?.avatar_url && (
                             <img src={user.avatar_url} alt={user.name} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
                         )}

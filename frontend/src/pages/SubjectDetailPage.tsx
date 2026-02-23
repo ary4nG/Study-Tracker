@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { subjects as subjectsApi, topics as topicsApi } from '../services/api';
 import type { Subject, Topic } from '../types';
 import SyllabusImporter from '../components/features/SyllabusImporter';
+import StudyTimerWidget from '../components/common/StudyTimerWidget';
 
 export default function SubjectDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -97,12 +98,15 @@ export default function SubjectDetailPage() {
 
             {/* Nav */}
             <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0 32px' }}>
-                <div style={{ maxWidth: '900px', margin: '0 auto', height: '56px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Link to="/dashboard" style={{ color: '#64748b', textDecoration: 'none', fontSize: '14px' }}>
-                        My Subjects
-                    </Link>
-                    <span style={{ color: '#cbd5e1' }}>›</span>
-                    <span style={{ fontWeight: 600, fontSize: '14px', color: '#1e293b' }}>{subject?.name}</span>
+                <div style={{ maxWidth: '900px', margin: '0 auto', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Link to="/dashboard" style={{ color: '#64748b', textDecoration: 'none', fontSize: '14px' }}>
+                            My Subjects
+                        </Link>
+                        <span style={{ color: '#cbd5e1' }}>›</span>
+                        <span style={{ fontWeight: 600, fontSize: '14px', color: '#1e293b' }}>{subject?.name}</span>
+                    </div>
+                    <StudyTimerWidget />
                 </div>
             </div>
 
