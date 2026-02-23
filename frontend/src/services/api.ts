@@ -69,4 +69,9 @@ export const sessions = {
     create: (data: SessionPayload) => API.post('/api/sessions/', data),
 };
 
+export const reports = {
+    weekly: (week?: string) =>
+        API.get(`/api/reports/weekly/${week ? '?week=' + week : ''}`),
+};
+
 export default API;
