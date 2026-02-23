@@ -15,6 +15,31 @@ A study tracking web app built with Django + React. Log study sessions, track to
 - **Overall Progress** — SVG arc ring showing mastery % across all subjects
 - **Weekly Reports** — navigate between weeks, view stat cards + donut chart (time per subject) + bar chart (mastery per subject)
 
+### Deployment (Local Production)
+To test the production build locally:
+1. Build frontend: `cd frontend && npm run build`
+2. Run backend with Gunicorn: `gunicorn backend.wsgi:application`
+
+---
+
+## 🚀 Production Deployment
+
+### Environment Variables
+For production, ensure the following are set beyond the basics:
+- `DEBUG=False`
+- `ALLOWED_HOSTS=your-app.com`
+- `CORS_ALLOWED_ORIGINS=https://your-frontend.com`
+- `LOGIN_REDIRECT_URL=https://your-frontend.com/dashboard`
+- `ACCOUNT_LOGOUT_REDIRECT_URL=https://your-frontend.com/login`
+- `SECURE_SSL_REDIRECT=True` (if using HTTPS)
+
+### Deployment Manifests
+- **Procfile**: Included for Gunicorn support on platforms like Render or Heroku.
+- **Static Files**: Django is configured with `WhiteNoise` for serving compressed static assets.
+
+### Scaling
+For higher loads, replace SQLite with PostgreSQL by setting `DATABASE_URL` in your environment.
+
 ---
 
 ## Tech Stack

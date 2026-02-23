@@ -12,6 +12,15 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 
+# Security (HTTPS redirects etc in production)
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=False, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=False, cast=bool)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if SECURE_SSL_REDIRECT else None
+
 # ─── Installed Apps ──────────────────────────────────────────────────────────
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -92,8 +101,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ─── Allauth (GitHub OAuth) ───────────────────────────────────────────────────
-LOGIN_REDIRECT_URL = 'http://localhost:5173/dashboard'
-ACCOUNT_LOGOUT_REDIRECT_URL = 'http://localhost:5173/login'
+LOGIN_REDIRECT_URL = config('LOGIN_REDIRECT_URL', default='http://localhost:5173/dashboard')
+ACCOUNT_LOGOUT_REDIRECT_URL = config('ACCOUNT_LOGOUT_REDIRECT_URL', default='http://localhost:5173/login')
 ACCOUNT_EMAIL_VERIFICATION = 'none'          # GitHub OAuth — no email needed
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_LOGIN_ON_GET = True            # Allow GET-based OAuth start
