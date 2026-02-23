@@ -1,12 +1,5 @@
 from rest_framework import serializers
-from .models import Subject, Topic
-
-
-class TopicSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Topic
-        fields = ['id', 'subject', 'name', 'status', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'subject', 'created_at', 'updated_at']
+from .models import Subject, Topic, StudySession
 
 
 class SubjectSerializer(serializers.ModelSerializer):
@@ -22,3 +15,21 @@ class SubjectSerializer(serializers.ModelSerializer):
             return obj.topics.count()
         except Exception:
             return 0
+
+
+class TopicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Topic
+        fields = ['id', 'subject', 'name', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class StudySessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudySession
+        fields = [
+            'id', 'subject', 'topic',
+            'start_time', 'end_time', 'duration_seconds',
+            'notes', 'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']

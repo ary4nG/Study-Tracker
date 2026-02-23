@@ -1,26 +1,28 @@
+import { useState } from 'react';
 import { useTimer } from '../../context/TimerContext';
 import { formatTime } from '../../utils/formatTime';
+import EndSessionModal from '../features/EndSessionModal';
 
-/**
- * StudyTimerWidget
- *
- * Before timer starts: renders a "▶ Start Study Session" button
- * in the top-right area (rendered by the page headers that include it).
- *
- * After timer starts: renders a sticky floating pill fixed at
- * bottom-right corner of the viewport showing elapsed time and
- * Pause/Resume + End Session controls.
- */
 export default function StudyTimerWidget() {
-    const { elapsed, isRunning, start, pause, reset } = useTimer();
+    const { elapsed, isRunning, startTime, start, pause, reset } = useTimer();
+    const [showEndModal, setShowEndModal] = useState(false);
 
     const hasStarted = elapsed > 0 || isRunning;
 
-    const handleEndSession = () => {
-        // Story 2.2 will hook this properly. For now: confirm + reset.
-        if (window.confirm(`End session? Duration: ${formatTime(elapsed)}\n\n(Session logging coming in Story 2.2)`)) {
-            reset();
-        }
+    const handleEndClick = () => {
+        if (isRunning) pause(); // auto-pause before showing modal
+        setShowEndModal(true);
+    };
+
+    const handleSessionSaved = () => {
+        setShowEndModal(false);
+        reset();
+    };
+
+    const handleModalCancel = () => {
+        setShowEndModal(false);
+        // Resume if it was running before user opened modal
+        if (elapsed > 0) start();
     };
 
     // ── Pre-start: inline button shown in page headers ──────────────────────
@@ -34,33 +36,38 @@ export default function StudyTimerWidget() {
 
     // ── Active: floating pill fixed at bottom-right ──────────────────────────
     return (
-        <div style={pillStyle}>
-            {/* Timer icon + elapsed */}
-            <span style={{ fontSize: '13px' }}>⏱</span>
-            <span style={timeStyle}>{formatTime(elapsed)}</span>
+        <>
+            <div style={pillStyle}>
+                <span style={{ fontSize: '13px' }}>⏱</span>
+                <span style={timeStyle}>{formatTime(elapsed)}</span>
+                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '16px' }}>|</span>
 
-            {/* Divider */}
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '16px' }}>|</span>
+                <button
+                    onClick={isRunning ? pause : start}
+                    style={controlBtnStyle}
+                    title={isRunning ? 'Pause' : 'Resume'}
+                >
+                    {isRunning ? '⏸ Pause' : '▶ Resume'}
+                </button>
 
-            {/* Pause / Resume */}
-            <button
-                onClick={isRunning ? pause : start}
-                style={controlBtnStyle}
-                title={isRunning ? 'Pause' : 'Resume'}
-            >
-                {isRunning ? '⏸ Pause' : '▶ Resume'}
-            </button>
+                <button onClick={handleEndClick} style={endBtnStyle}>
+                    ✓ End Session
+                </button>
+            </div>
 
-            {/* End session */}
-            <button onClick={handleEndSession} style={endBtnStyle}>
-                ✓ End Session
-            </button>
-        </div>
+            {showEndModal && (
+                <EndSessionModal
+                    elapsed={elapsed}
+                    startTime={startTime}
+                    onSaved={handleSessionSaved}
+                    onCancel={handleModalCancel}
+                />
+            )}
+        </>
     );
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────
-
 const startBtnStyle: React.CSSProperties = {
     padding: '8px 16px',
     background: '#2563EB',
@@ -89,7 +96,6 @@ const pillStyle: React.CSSProperties = {
     borderRadius: '50px',
     boxShadow: '0 4px 20px rgba(37,99,235,0.45)',
     zIndex: 100,
-    backdropFilter: 'blur(8px)',
     userSelect: 'none',
 };
 

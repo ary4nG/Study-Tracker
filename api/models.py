@@ -31,7 +31,7 @@ class Topic(models.Model):
     subject = models.ForeignKey(
         Subject,
         on_delete=models.CASCADE,
-        related_name='topics',  # activates topic_count in SubjectSerializer
+        related_name='topics',
     )
     name = models.CharField(max_length=500)
     status = models.CharField(
@@ -47,3 +47,37 @@ class Topic(models.Model):
 
     def __str__(self):
         return f"{self.subject.name} — {self.name}"
+
+
+class StudySession(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sessions',
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sessions',
+    )
+    topic = models.ForeignKey(
+        Topic,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sessions',
+    )
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    duration_seconds = models.PositiveIntegerField()
+    notes = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        mins = self.duration_seconds // 60
+        return f"{self.user.username} — {mins}m — {self.created_at.date()}"

@@ -1,11 +1,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import UserDetailView, LogoutView, SubjectViewSet, TopicViewSet, ParseSyllabusView
+from .views import UserDetailView, LogoutView, SubjectViewSet, TopicViewSet, SessionViewSet, ParseSyllabusView
 
 router = DefaultRouter()
 router.register(r'subjects', SubjectViewSet, basename='subject')
 router.register(r'topics', TopicViewSet, basename='topic')
+router.register(r'sessions', SessionViewSet, basename='session')
 
 urlpatterns = [
     path('auth/user/', UserDetailView.as_view(), name='user-detail'),

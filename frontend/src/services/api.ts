@@ -1,7 +1,6 @@
 import axios from 'axios';
 import type { SubjectFormData, Topic } from '../types';
 
-/** Read the csrftoken cookie that Django sets after login. */
 function getCsrfToken(): string {
     const match = document.cookie
         .split(';')
@@ -9,17 +8,11 @@ function getCsrfToken(): string {
     return match ? match.trim().substring('csrftoken='.length) : '';
 }
 
-/**
- * Single shared axios instance.
- * withCredentials: true  → sends Django session cookie on every request
- * X-CSRFToken interceptor → required by DRF SessionAuthentication for POST/PATCH/DELETE
- */
 const API = axios.create({
     baseURL: import.meta.env.VITE_API_URL as string,
     withCredentials: true,
 });
 
-// Inject CSRF token on all mutating requests
 API.interceptors.request.use((config) => {
     const method = config.method?.toLowerCase();
     if (method && ['post', 'put', 'patch', 'delete'].includes(method)) {
@@ -54,6 +47,20 @@ export const topics = {
 export const syllabusParser = {
     save: (subjectId: number, topicNames: string[]) =>
         API.post(`/api/subjects/${subjectId}/parse-syllabus/`, { topics: topicNames }),
+};
+
+export interface SessionPayload {
+    subject: number;
+    topic: number | null;
+    start_time: string;  // ISO 8601
+    end_time: string;    // ISO 8601
+    duration_seconds: number;
+    notes?: string;
+}
+
+export const sessions = {
+    list: () => API.get('/api/sessions/'),
+    create: (data: SessionPayload) => API.post('/api/sessions/', data),
 };
 
 export default API;
