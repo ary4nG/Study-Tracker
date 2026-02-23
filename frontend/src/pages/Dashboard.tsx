@@ -7,6 +7,7 @@ import SubjectForm from '../components/features/SubjectForm';
 import StudyTimerWidget from '../components/common/StudyTimerWidget';
 import DailyGoalWidget from '../components/features/DailyGoalWidget';
 import StreakWidget from '../components/features/StreakWidget';
+import OverallProgressWidget from '../components/features/OverallProgressWidget';
 import { useDailyGoal } from '../hooks/useDailyGoal';
 import { useStreak } from '../hooks/useStreak';
 import { useTimer } from '../context/TimerContext';
@@ -95,44 +96,49 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Skeleton loader */}
-                {loading && (
-                    <div style={gridStyle}>
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} style={{ ...skeletonCard, animationDelay: `${i * 0.1}s` }} />
-                        ))}
-                    </div>
-                )}
+                {/* Subject grid + overall progress sidebar */}
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    {/* Subject grid */}
+                    <div style={{ flex: '1 1 520px', minWidth: 0 }}>
+                        {/* Skeleton loader */}
+                        {loading && (
+                            <div style={gridStyle}>
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} style={{ ...skeletonCard, animationDelay: `${i * 0.1}s` }} />
+                                ))}
+                            </div>
+                        )}
 
-                {/* Empty state */}
-                {!loading && subjectList.length === 0 && (
-                    <div style={emptyState}>
-                        <p style={{ fontSize: '32px', margin: '0 0 8px' }}>📚</p>
-                        <p style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>
-                            No subjects yet
-                        </p>
-                        <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 16px' }}>
-                            Add your first subject to start tracking your syllabus
-                        </p>
-                        <button onClick={() => setShowForm(true)} style={primaryBtn}>
-                            + Add your first subject
-                        </button>
-                    </div>
-                )}
+                        {/* Empty state */}
+                        {!loading && subjectList.length === 0 && (
+                            <div style={emptyState}>
+                                <p style={{ fontSize: '32px', margin: '0 0 8px' }}>📚</p>
+                                <p style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>No subjects yet</p>
+                                <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 16px' }}>Add your first subject to start tracking your syllabus</p>
+                                <button onClick={() => setShowForm(true)} style={primaryBtn}>+ Add your first subject</button>
+                            </div>
+                        )}
 
-                {/* Subject grid */}
-                {!loading && subjectList.length > 0 && (
-                    <div style={gridStyle}>
-                        {subjectList.map((subject) => (
-                            <SubjectCard
-                                key={subject.id}
-                                subject={subject}
-                                onUpdated={handleUpdated}
-                                onDeleted={handleDeleted}
-                            />
-                        ))}
+                        {/* Subject grid */}
+                        {!loading && subjectList.length > 0 && (
+                            <div style={gridStyle}>
+                                {subjectList.map((subject) => (
+                                    <SubjectCard
+                                        key={subject.id}
+                                        subject={subject}
+                                        onUpdated={handleUpdated}
+                                        onDeleted={handleDeleted}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )}
+
+                    {/* Overall Progress sidebar */}
+                    <div style={{ flex: '0 0 240px', minWidth: '220px' }}>
+                        <OverallProgressWidget subjects={subjectList} loading={loading} />
+                    </div>
+                </div>
             </main>
 
             {/* Add Subject Modal */}
