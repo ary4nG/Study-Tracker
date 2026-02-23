@@ -57,6 +57,7 @@ export default function HistoryPage() {
                         <nav style={{ display: 'flex', gap: '16px' }}>
                             <Link to="/dashboard" style={navLink}>Dashboard</Link>
                             <span style={{ ...navLink, color: '#1e293b', fontWeight: 600, borderBottom: '2px solid #2563EB', paddingBottom: '2px' }}>History</span>
+                            <Link to="/reports" style={navLink}>Reports</Link>
                         </nav>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

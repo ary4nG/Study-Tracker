@@ -66,6 +66,7 @@ export default function Dashboard() {
                     <span style={{ fontWeight: 700, fontSize: '18px', color: '#2563EB' }}>SyllabusTracker</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <Link to="/history" style={{ fontSize: '14px', color: '#64748b', textDecoration: 'none', fontWeight: 500 }}>History</Link>
+                        <Link to="/reports" style={{ fontSize: '14px', color: '#64748b', textDecoration: 'none', fontWeight: 500 }}>Reports</Link>
                         <StudyTimerWidget />
                         {user?.avatar_url && (
                             <img src={user.avatar_url} alt={user.name} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
