@@ -86,3 +86,47 @@ class SessionAPITests(APITestCase):
         """AC: Unauthenticated access returns 403."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # ── Filters ───────────────────────────────────────────────────────────────
+
+    def test_filter_sessions_by_subject(self):
+        """AC: ?subject=X returns only sessions for that subject."""
+        other_subject = Subject.objects.create(user=self.user_a, name='Physics')
+        now = timezone.now()
+        self.client.force_login(self.user_a)
+        self.client.post(self.url, self.valid_payload, format='json')  # Maths session
+        self.client.post(self.url, {
+            **self.valid_payload,
+            'subject': other_subject.id, 'topic': None,
+        }, format='json')  # Physics session
+        response = self.client.get(f'{self.url}?subject={self.subject.id}')
+        data = response.json()
+        results = data.get('results', data)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['subject'], self.subject.id)
+
+    def test_filter_sessions_by_days(self):
+        """AC: ?days=7 returns only sessions created in the last 7 days."""
+        now = timezone.now()
+        self.client.force_login(self.user_a)
+        # Recent session (today)
+        StudySession.objects.create(
+            user=self.user_a, subject=self.subject,
+            start_time=now - timezone.timedelta(hours=1), end_time=now,
+            duration_seconds=3600,
+        )
+        # Old session (30 days ago — out of filter range)
+        old_session = StudySession.objects.create(
+            user=self.user_a, subject=self.subject,
+            start_time=now - timezone.timedelta(days=30), end_time=now - timezone.timedelta(days=30),
+            duration_seconds=3600,
+        )
+        old_session.created_at = now - timezone.timedelta(days=30)
+        old_session.save()
+        response = self.client.get(f'{self.url}?days=7')
+        data = response.json()
+        results = data.get('results', data)
+        # Only the recent session should appear
+        ids = [r['id'] for r in results]
+        self.assertNotIn(old_session.id, ids)
+

@@ -5,10 +5,10 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import SubjectDetailPage from './pages/SubjectDetailPage';
+import HistoryPage from './pages/HistoryPage';
 
 function App() {
   return (
-    // TimerProvider wraps everything so elapsed/isRunning persists across navigation
     <TimerProvider>
       <BrowserRouter>
         <AuthProvider>
@@ -30,6 +30,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SubjectDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <HistoryPage />
                 </ProtectedRoute>
               }
             />

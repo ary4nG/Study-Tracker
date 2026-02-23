@@ -33,3 +33,16 @@ export interface Topic {
   created_at: string;
   updated_at: string;
 }
+
+export interface Session {
+  id: number;
+  subject: number | null;
+  topic: number | null;
+  subject_name: string | null;
+  topic_name: string | null;
+  start_time: string;
+  end_time: string;
+  duration_seconds: number;
+  notes: string;
+  created_at: string;
+}

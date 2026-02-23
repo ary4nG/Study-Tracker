@@ -36,11 +36,22 @@ class TopicSerializer(serializers.ModelSerializer):
 
 
 class StudySessionSerializer(serializers.ModelSerializer):
+    # Read-only denormalized fields so frontend doesn't need extra lookups
+    subject_name = serializers.SerializerMethodField()
+    topic_name = serializers.SerializerMethodField()
+
     class Meta:
         model = StudySession
         fields = [
             'id', 'subject', 'topic',
+            'subject_name', 'topic_name',
             'start_time', 'end_time', 'duration_seconds',
             'notes', 'created_at',
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'subject_name', 'topic_name', 'created_at']
+
+    def get_subject_name(self, obj):
+        return obj.subject.name if obj.subject else None
+
+    def get_topic_name(self, obj):
+        return obj.topic.name if obj.topic else None

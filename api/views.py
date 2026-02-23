@@ -1,5 +1,7 @@
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from datetime import timedelta
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -70,17 +72,32 @@ class TopicViewSet(viewsets.ModelViewSet):
 
 class SessionViewSet(viewsets.ModelViewSet):
     """
-    POST   /api/sessions/        — log a completed session
-    GET    /api/sessions/        — list user's sessions (for Story 2.4)
-    GET    /api/sessions/{id}/   — retrieve single session
-    No update/delete for MVP — sessions are append-only logs.
+    GET    /api/sessions/           — list user's sessions
+    GET    /api/sessions/?subject=X — filter by subject ID
+    GET    /api/sessions/?days=N    — filter to last N days
+    POST   /api/sessions/           — log a completed session
+    No update/delete for MVP.
     """
     serializer_class = StudySessionSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'post', 'head', 'options']  # no PUT/PATCH/DELETE
+    http_method_names = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
-        return StudySession.objects.filter(user=self.request.user)
+        qs = StudySession.objects.filter(user=self.request.user)
+
+        subject_id = self.request.query_params.get('subject')
+        if subject_id:
+            qs = qs.filter(subject_id=subject_id)
+
+        days = self.request.query_params.get('days')
+        if days:
+            try:
+                cutoff = timezone.now() - timedelta(days=int(days))
+                qs = qs.filter(created_at__gte=cutoff)
+            except (ValueError, TypeError):
+                pass
+
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

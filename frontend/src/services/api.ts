@@ -52,14 +52,20 @@ export const syllabusParser = {
 export interface SessionPayload {
     subject: number;
     topic: number | null;
-    start_time: string;  // ISO 8601
-    end_time: string;    // ISO 8601
+    start_time: string;
+    end_time: string;
     duration_seconds: number;
     notes?: string;
 }
 
 export const sessions = {
-    list: () => API.get('/api/sessions/'),
+    list: (params?: { subject?: number; days?: number }) => {
+        const qs = new URLSearchParams();
+        if (params?.subject) qs.set('subject', String(params.subject));
+        if (params?.days) qs.set('days', String(params.days));
+        const query = qs.toString();
+        return API.get(`/api/sessions/${query ? '?' + query : ''}`);
+    },
     create: (data: SessionPayload) => API.post('/api/sessions/', data),
 };
 
