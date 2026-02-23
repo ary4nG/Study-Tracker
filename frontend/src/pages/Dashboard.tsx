@@ -5,6 +5,9 @@ import type { Subject } from '../types';
 import SubjectCard from '../components/features/SubjectCard';
 import SubjectForm from '../components/features/SubjectForm';
 import StudyTimerWidget from '../components/common/StudyTimerWidget';
+import DailyGoalWidget from '../components/features/DailyGoalWidget';
+import { useDailyGoal } from '../hooks/useDailyGoal';
+import { useTimer } from '../context/TimerContext';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -12,13 +15,27 @@ export default function Dashboard() {
     const [subjectList, setSubjectList] = useState<Subject[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [sessionRefreshKey, setSessionRefreshKey] = useState(0);
+
+    // When timer resets after a session is saved, increment refreshKey so
+    // DailyGoalWidget re-fetches today's total.
+    const { elapsed } = useTimer();
+    const [prevElapsed, setPrevElapsed] = useState(elapsed);
+    useEffect(() => {
+        if (prevElapsed > 0 && elapsed === 0) {
+            // Timer was just reset → a session was saved
+            setSessionRefreshKey((k) => k + 1);
+        }
+        setPrevElapsed(elapsed);
+    }, [elapsed, prevElapsed]);
+
+    const dailyGoal = useDailyGoal(sessionRefreshKey);
 
     useEffect(() => {
         subjectsApi
             .list()
             .then((res) => {
                 const data = res.data;
-                // DRF pagination wraps in {results: [...]}; handle both
                 setSubjectList(Array.isArray(data) ? data : data.results ?? []);
             })
             .finally(() => setLoading(false));
@@ -57,16 +74,21 @@ export default function Dashboard() {
 
             {/* Main */}
             <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+
+                {/* Daily Goal Widget + subjects header row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
                     <div>
                         <h1 style={{ margin: '0 0 4px', fontSize: '22px', fontWeight: 700, color: '#1e293b' }}>My Subjects</h1>
                         <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
                             {loading ? 'Loading…' : `${subjectList.length} subject${subjectList.length !== 1 ? 's' : ''}`}
                         </p>
                     </div>
-                    <button onClick={() => setShowForm(true)} style={primaryBtn}>
-                        + Add Subject
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                        <DailyGoalWidget state={dailyGoal} />
+                        <button onClick={() => setShowForm(true)} style={{ ...primaryBtn, alignSelf: 'flex-start', marginTop: '2px' }}>
+                            + Add Subject
+                        </button>
+                    </div>
                 </div>
 
                 {/* Skeleton loader */}
