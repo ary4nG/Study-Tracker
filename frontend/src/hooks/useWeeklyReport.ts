@@ -59,7 +59,8 @@ export function useWeeklyReport(): WeeklyReportState {
 
     const fetchReport = useCallback(() => {
         setLoading(true);
-        API.get(`/api/reports/weekly/?week=${param}`)
+        const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+        API.get(`/api/reports/weekly/?week=${param}&tz=${tz}`)
             .then((res) => setData(res.data as WeeklyReportData))
             .catch(() => setData(null))
             .finally(() => setLoading(false));

@@ -14,7 +14,8 @@ export function useStreak(refreshKey?: number): StreakState {
 
     const fetchStreak = useCallback(() => {
         setLoading(true);
-        API.get('/api/sessions/streak/')
+        const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+        API.get(`/api/sessions/streak/?tz=${tz}`)
             .then((res) => {
                 setStreak(res.data.streak ?? 0);
                 setStudiedToday(res.data.studied_today ?? false);

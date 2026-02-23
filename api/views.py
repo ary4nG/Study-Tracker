@@ -91,13 +91,33 @@ class SessionViewSet(viewsets.ModelViewSet):
 
 
 class StreakView(APIView):
+    """
+    GET /api/sessions/streak/?tz=Asia/Kolkata
+    Returns { streak: int, studied_today: bool }
+
+    Dates are computed in the user's local timezone (defaults to UTC).
+    A session at 23:00 UTC+5:30 correctly counts as local Monday, not UTC Tuesday.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+        tz_name = request.query_params.get('tz', 'UTC')
+        try:
+            tz = ZoneInfo(tz_name)
+        except ZoneInfoNotFoundError:
+            tz = ZoneInfo('UTC')
+
         sessions = StudySession.objects.filter(user=request.user)
-        unique_dates = sorted({s.created_at.date() for s in sessions}, reverse=True)
-        today = date.today()
+        # Convert created_at to local date
+        unique_dates = sorted(
+            {s.created_at.astimezone(tz).date() for s in sessions},
+            reverse=True
+        )
+        today = datetime.now(tz).date()
         studied_today = today in unique_dates
+
         streak = 0
         check = today if studied_today else today - timedelta(days=1)
         for d in unique_dates:
@@ -111,44 +131,57 @@ class StreakView(APIView):
 
 class WeeklyReportView(APIView):
     """
-    GET /api/reports/weekly/             → current week
-    GET /api/reports/weekly/?week=YYYY-WW → specified ISO week
+    GET /api/reports/weekly/?week=YYYY-WW&tz=Asia/Kolkata
+    Filters sessions by local date within Mon–Sun of the specified week.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+        tz_name = request.query_params.get('tz', 'UTC')
+        try:
+            tz = ZoneInfo(tz_name)
+        except ZoneInfoNotFoundError:
+            tz = ZoneInfo('UTC')
+
         week_str = request.query_params.get('week')
         try:
             if week_str:
-                # ISO week format: '2026-08' → Monday of that week
                 monday = datetime.strptime(f'{week_str}-1', '%G-%V-%u').date()
             else:
-                today = date.today()
-                monday = today - timedelta(days=today.weekday())
+                local_today = datetime.now(tz).date()
+                monday = local_today - timedelta(days=local_today.weekday())
         except (ValueError, TypeError):
             return Response({'error': 'Invalid week format. Use YYYY-WW (e.g. 2026-08).'}, status=400)
 
         sunday = monday + timedelta(days=6)
 
-        # Sessions in this week (created_at date falls within Mon–Sun)
-        sessions = StudySession.objects.filter(
-            user=request.user,
-            created_at__date__gte=monday,
-            created_at__date__lte=sunday,
-        )
+        # Filter sessions by converting created_at to local date
+        all_sessions = StudySession.objects.filter(user=request.user)
+        sessions = [
+            s for s in all_sessions
+            if monday <= s.created_at.astimezone(tz).date() <= sunday
+        ]
 
         total_duration_seconds = sum(s.duration_seconds for s in sessions)
-        unique_subjects_count = sessions.values('subject').distinct().count()
-        session_count = sessions.count()
-        days_studied = sessions.values_list('created_at__date', flat=True).distinct().count()
+        unique_subjects_count = len({s.subject_id for s in sessions if s.subject_id})
+        session_count = len(sessions)
+        days_studied = len({s.created_at.astimezone(tz).date() for s in sessions})
 
-        # Topics marked mastered within this week
+        # Topics marked mastered within this week (local date)
         topics_mastered_count = Topic.objects.filter(
             subject__user=request.user,
             status='mastered',
-            updated_at__date__gte=monday,
-            updated_at__date__lte=sunday,
         ).count()
+        # Refine: only those updated in this local week
+        topics_mastered_count = sum(
+            1 for t in Topic.objects.filter(
+                subject__user=request.user,
+                status='mastered',
+            )
+            if monday <= t.updated_at.astimezone(tz).date() <= sunday
+        )
 
         return Response({
             'week_start': monday.isoformat(),
