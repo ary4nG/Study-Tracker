@@ -67,6 +67,22 @@ class TopicAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['name'], 'Advanced Calculus')
 
+    def test_update_topic_status(self):
+        """AC: PATCH status cycles through not_started → in_progress → mastered."""
+        self.client.force_login(self.user_a)
+        url = f'{self.url}{self.topic_a.id}/'
+        # not_started → in_progress
+        resp = self.client.patch(url, {'status': 'in_progress'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()['status'], 'in_progress')
+        self.topic_a.refresh_from_db()
+        self.assertEqual(self.topic_a.status, 'in_progress')
+        # in_progress → mastered
+        resp = self.client.patch(url, {'status': 'mastered'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()['status'], 'mastered')
+
+
     def test_cannot_update_other_users_topic(self):
         """Data isolation: cannot PATCH another user's topic."""
         self.client.force_login(self.user_a)

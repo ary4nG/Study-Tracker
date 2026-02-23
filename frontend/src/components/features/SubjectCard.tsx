@@ -18,6 +18,7 @@ export default function SubjectCard({ subject, onUpdated, onDeleted }: SubjectCa
     const [color, setColor] = useState(subject.color);
     const [saving, setSaving] = useState(false);
     const [topicCount, setTopicCount] = useState(subject.topic_count);
+    const masteredCount = subject.mastered_count ?? 0;
 
     const handleSave = async () => {
         if (!name.trim()) return;
@@ -41,6 +42,9 @@ export default function SubjectCard({ subject, onUpdated, onDeleted }: SubjectCa
         setTopicCount((prev) => prev + imported.length);
         setShowImporter(false);
     };
+
+    // mini progress bar values
+    const pct = topicCount > 0 ? Math.round((masteredCount / topicCount) * 100) : 0;
 
     if (editing) {
         return (
@@ -87,10 +91,22 @@ export default function SubjectCard({ subject, onUpdated, onDeleted }: SubjectCa
                             {subject.description}
                         </p>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Link to={`/subjects/${subject.id}`} style={{ fontSize: '12px', color: '#94a3b8', textDecoration: 'none' }}>
-                            {topicCount} {topicCount === 1 ? 'topic' : 'topics'}
-                        </Link>
+                    <div style={{ marginTop: '8px' }}>
+                        {/* Topic count + mastered */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <Link to={`/subjects/${subject.id}`} style={{ fontSize: '12px', color: '#94a3b8', textDecoration: 'none' }}>
+                                {topicCount} {topicCount === 1 ? 'topic' : 'topics'}
+                            </Link>
+                            <span style={{ fontSize: '11px', color: masteredCount === topicCount && topicCount > 0 ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
+                                {masteredCount}/{topicCount} mastered
+                            </span>
+                        </div>
+                        {/* Mini progress bar */}
+                        {topicCount > 0 && (
+                            <div style={{ background: '#f1f5f9', borderRadius: '99px', height: '4px', overflow: 'hidden', marginBottom: '8px' }}>
+                                <div style={{ width: `${pct}%`, background: pct === 100 ? '#22c55e' : '#2563EB', height: '100%', borderRadius: '99px', transition: 'width 0.4s ease' }} />
+                            </div>
+                        )}
                         <button onClick={() => setShowImporter(true)} style={{ fontSize: '11px', color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
                             + Import Syllabus
                         </button>

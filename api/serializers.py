@@ -4,15 +4,26 @@ from .models import Subject, Topic, StudySession
 
 class SubjectSerializer(serializers.ModelSerializer):
     topic_count = serializers.SerializerMethodField()
+    mastered_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Subject
-        fields = ['id', 'name', 'description', 'color', 'topic_count', 'created_at', 'updated_at']
+        fields = [
+            'id', 'name', 'description', 'color',
+            'topic_count', 'mastered_count',
+            'created_at', 'updated_at',
+        ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def get_topic_count(self, obj):
         try:
             return obj.topics.count()
+        except Exception:
+            return 0
+
+    def get_mastered_count(self, obj):
+        try:
+            return obj.topics.filter(status='mastered').count()
         except Exception:
             return 0
 

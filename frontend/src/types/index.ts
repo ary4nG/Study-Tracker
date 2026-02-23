@@ -14,6 +14,7 @@ export interface Subject {
   description: string;
   color: string;
   topic_count: number;
+  mastered_count: number;
   created_at: string;
   updated_at: string;
 }

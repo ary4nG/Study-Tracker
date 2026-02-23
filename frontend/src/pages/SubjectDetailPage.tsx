@@ -4,6 +4,7 @@ import { subjects as subjectsApi, topics as topicsApi } from '../services/api';
 import type { Subject, Topic } from '../types';
 import SyllabusImporter from '../components/features/SyllabusImporter';
 import StudyTimerWidget from '../components/common/StudyTimerWidget';
+import { cycleStatus, statusColor, nextStatusLabel } from '../utils/cycleStatus';
 
 export default function SubjectDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -33,6 +34,20 @@ export default function SubjectDetailPage() {
             .catch(() => navigate('/dashboard'))
             .finally(() => setLoading(false));
     }, [subjectId, navigate]);
+
+    // ── Status cycle (optimistic update) ───────────────────────────────────────
+    const handleStatusClick = async (topic: Topic) => {
+        const next = cycleStatus(topic.status);
+        // 1. Update UI instantly
+        setTopicList((prev) => prev.map((t) => t.id === topic.id ? { ...t, status: next } : t));
+        try {
+            // 2. Persist
+            await topicsApi.update(topic.id, { status: next });
+        } catch {
+            // 3. Revert on failure
+            setTopicList((prev) => prev.map((t) => t.id === topic.id ? { ...t, status: topic.status } : t));
+        }
+    };
 
     // ── Add topic ──────────────────────────────────────────────────────────────
     const handleAddTopic = async () => {
@@ -90,6 +105,10 @@ export default function SubjectDetailPage() {
     }
 
     const colorBar = subject?.color ?? '#2563EB';
+    const total = topicList.length;
+    const mastered = topicList.filter((t) => t.status === 'mastered').length;
+    const inProgress = topicList.filter((t) => t.status === 'in_progress').length;
+    const pct = total > 0 ? Math.round((mastered / total) * 100) : 0;
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
@@ -112,19 +131,41 @@ export default function SubjectDetailPage() {
 
             <main style={{ maxWidth: '900px', margin: '0 auto', padding: '32px' }}>
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
-                    <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                         <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>
                             {subject?.name}
                         </h1>
                         {subject?.description && (
                             <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>{subject.description}</p>
                         )}
-                        <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#94a3b8' }}>
-                            {topicList.length} {topicList.length === 1 ? 'topic' : 'topics'}
+                        <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>
+                            {total} {total === 1 ? 'topic' : 'topics'}
+                            {inProgress > 0 && <span style={{ marginLeft: '8px', color: '#f59e0b' }}>· {inProgress} in progress</span>}
                         </p>
+
+                        {/* Progress bar — only show when there are topics */}
+                        {total > 0 && (
+                            <div style={{ marginTop: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '12px', color: '#64748b' }}>Mastery Progress</span>
+                                    <span style={{ fontSize: '12px', fontWeight: 600, color: mastered === total ? '#22c55e' : '#1e293b' }}>
+                                        {mastered} / {total} mastered ({pct}%)
+                                    </span>
+                                </div>
+                                <div style={{ background: '#e2e8f0', borderRadius: '99px', height: '7px', overflow: 'hidden', maxWidth: '320px' }}>
+                                    <div style={{
+                                        width: `${pct}%`,
+                                        background: mastered === total ? '#22c55e' : 'linear-gradient(90deg, #2563EB, #22c55e)',
+                                        height: '100%',
+                                        borderRadius: '99px',
+                                        transition: 'width 0.4s ease',
+                                    }} />
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginLeft: '16px', flexShrink: 0 }}>
                         <button onClick={() => setShowImporter(true)} style={ghostBtn}>
                             📥 Import Syllabus
                         </button>
@@ -187,12 +228,25 @@ export default function SubjectDetailPage() {
                                     {index + 1}
                                 </span>
 
-                                {/* Status dot */}
+                                {/* Clickable status dot */}
                                 <span
-                                    title={topic.status}
+                                    onClick={() => handleStatusClick(topic)}
+                                    title={`${topic.status.replace('_', ' ')} → click to mark as ${nextStatusLabel(topic.status)}`}
                                     style={{
-                                        width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-                                        background: topic.status === 'mastered' ? '#22c55e' : topic.status === 'in_progress' ? '#f59e0b' : '#e2e8f0',
+                                        width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0,
+                                        background: statusColor(topic.status),
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.15s, box-shadow 0.15s',
+                                        display: 'inline-block',
+                                        boxShadow: '0 0 0 0px rgba(34,197,94,0)',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        (e.currentTarget as HTMLElement).style.transform = 'scale(1.35)';
+                                        (e.currentTarget as HTMLElement).style.boxShadow = `0 0 0 3px ${statusColor(topic.status)}33`;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+                                        (e.currentTarget as HTMLElement).style.boxShadow = '0 0 0 0px rgba(34,197,94,0)';
                                     }}
                                 />
 
@@ -206,10 +260,28 @@ export default function SubjectDetailPage() {
                                         autoFocus
                                     />
                                 ) : (
-                                    <span style={{ flex: 1, fontSize: '14px', color: '#1e293b' }}>{topic.name}</span>
+                                    <span style={{
+                                        flex: 1, fontSize: '14px',
+                                        color: topic.status === 'mastered' ? '#86efac' : '#1e293b',
+                                        textDecoration: topic.status === 'mastered' ? 'line-through' : 'none',
+                                        transition: 'color 0.2s, text-decoration 0.2s',
+                                    }}>
+                                        {topic.name}
+                                    </span>
                                 )}
 
-                                {/* Actions */}
+                                {/* Status badge */}
+                                {editingId !== topic.id && topic.status !== 'not_started' && (
+                                    <span style={{
+                                        fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '99px',
+                                        background: topic.status === 'mastered' ? '#dcfce7' : '#fef9c3',
+                                        color: topic.status === 'mastered' ? '#15803d' : '#92400e',
+                                    }}>
+                                        {topic.status === 'mastered' ? 'Mastered' : 'In Progress'}
+                                    </span>
+                                )}
+
+                                {/* Edit / Delete actions */}
                                 {editingId === topic.id ? (
                                     <>
                                         <button onClick={() => handleSaveEdit(topic.id)} disabled={saving} style={{ ...primaryBtn, padding: '5px 12px', fontSize: '13px' }}>
@@ -228,6 +300,13 @@ export default function SubjectDetailPage() {
                             </div>
                         ))}
                     </div>
+                )}
+
+                {/* Legend */}
+                {topicList.length > 0 && (
+                    <p style={{ marginTop: '12px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+                        Click the coloured dot to cycle status: ⬜ Not Started → 🟡 In Progress → 🟢 Mastered
+                    </p>
                 )}
             </main>
 
