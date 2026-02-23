@@ -23,8 +23,20 @@ export default function OverallProgressWidget({ subjects, loading }: OverallProg
     if (loading) {
         return (
             <div style={cardStyle}>
-                <div style={{ width: '120px', height: '16px', background: '#f1f5f9', borderRadius: '4px', marginBottom: '12px' }} />
-                <div style={{ width: '100px', height: '100px', background: '#f1f5f9', borderRadius: '50%', margin: '0 auto' }} />
+                <div style={{ ...skeletonBox, width: '120px', height: '16px', marginBottom: '14px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                    <div style={{ ...skeletonBox, width: '80px', height: '80px', borderRadius: '50%', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                        <div style={{ ...skeletonBox, width: '100%', height: '12px', marginBottom: '6px' }} />
+                        <div style={{ ...skeletonBox, width: '70%', height: '10px' }} />
+                    </div>
+                </div>
+                {[1, 2, 3].map((i) => (
+                    <div key={i} style={{ marginBottom: '10px' }}>
+                        <div style={{ ...skeletonBox, width: '100%', height: '8px', marginBottom: '4px' }} />
+                        <div style={{ ...skeletonBox, width: '100%', height: '4px', borderRadius: '2px' }} />
+                    </div>
+                ))}
             </div>
         );
     }
@@ -142,4 +154,11 @@ const cardStyle: React.CSSProperties = {
     border: '1px solid #e2e8f0',
     borderRadius: '12px',
     padding: '16px',
+};
+
+const skeletonBox: React.CSSProperties = {
+    background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.4s infinite',
+    borderRadius: '4px',
 };

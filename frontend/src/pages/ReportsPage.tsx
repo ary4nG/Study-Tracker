@@ -47,9 +47,9 @@ export default function ReportsPage() {
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
             {/* Header */}
-            <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0 32px' }}>
-                <div style={{ maxWidth: '1100px', margin: '0 auto', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ maxWidth: '1100px', margin: '0 auto', height: '60px', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
                         <Link to="/dashboard" style={{ fontWeight: 700, fontSize: '18px', color: '#2563EB', textDecoration: 'none' }}>SyllabusTracker</Link>
                         <nav style={{ display: 'flex', gap: '16px' }}>
                             <Link to="/dashboard" style={navLink}>Dashboard</Link>
@@ -57,14 +57,14 @@ export default function ReportsPage() {
                             <span style={{ ...navLink, color: '#1e293b', fontWeight: 600, borderBottom: '2px solid #2563EB', paddingBottom: '2px' }}>Reports</span>
                         </nav>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
                         <StudyTimerWidget />
                         <button onClick={logout} style={ghostBtn}>Logout</button>
                     </div>
                 </div>
             </header>
 
-            <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px' }}>
+            <main className="content-container">
 
                 {/* Week navigator */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
@@ -90,9 +90,9 @@ export default function ReportsPage() {
 
                 {/* Loading state */}
                 {report.loading && (
-                    <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
                         {[1, 2, 3, 4].map((i) => (
-                            <div key={i} style={{ flex: 1, height: '90px', borderRadius: '10px', background: 'linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%)', backgroundSize: '200% 100%' }} />
+                            <div key={i} style={{ flex: '1 1 120px', height: '90px', borderRadius: '10px', ...skeletonBox }} />
                         ))}
                     </div>
                 )}
@@ -175,4 +175,11 @@ const chartCard: React.CSSProperties = {
 };
 const chartTitle: React.CSSProperties = {
     margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: '#1e293b',
+};
+
+const skeletonBox: React.CSSProperties = {
+    background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.4s infinite',
+    borderRadius: '4px',
 };

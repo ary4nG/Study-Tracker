@@ -20,8 +20,10 @@ export default function SubjectDetailPage() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editingName, setEditingName] = useState('');
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        setLoading(true);
         Promise.all([
             subjectsApi.get(subjectId),
             topicsApi.list(subjectId),
@@ -30,8 +32,12 @@ export default function SubjectDetailPage() {
                 setSubject(subRes.data as Subject);
                 const data = topRes.data;
                 setTopicList(Array.isArray(data) ? data : data.results ?? []);
+                setError(null);
             })
-            .catch(() => navigate('/dashboard'))
+            .catch(() => {
+                setError('Failed to load subject data. Redirecting...');
+                setTimeout(() => navigate('/dashboard'), 2000);
+            })
             .finally(() => setLoading(false));
     }, [subjectId, navigate]);
 
@@ -96,13 +102,6 @@ export default function SubjectDetailPage() {
         setShowImporter(false);
     };
 
-    if (loading) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <p style={{ color: '#64748b' }}>Loading…</p>
-            </div>
-        );
-    }
 
     const colorBar = subject?.color ?? '#2563EB';
     const total = topicList.length;
@@ -116,36 +115,48 @@ export default function SubjectDetailPage() {
             <div style={{ height: '6px', background: colorBar }} />
 
             {/* Nav */}
-            <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0 32px' }}>
-                <div style={{ maxWidth: '900px', margin: '0 auto', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ maxWidth: '900px', margin: '0 auto', height: '56px', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Link to="/dashboard" style={{ color: '#64748b', textDecoration: 'none', fontSize: '14px' }}>
+                        <Link to="/dashboard" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>
                             My Subjects
                         </Link>
                         <span style={{ color: '#cbd5e1' }}>›</span>
-                        <span style={{ fontWeight: 600, fontSize: '14px', color: '#1e293b' }}>{subject?.name}</span>
+                        <span style={{ fontWeight: 600, fontSize: '13px', color: '#1e293b', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {subject?.name || '...'}
+                        </span>
                     </div>
                     <StudyTimerWidget />
                 </div>
             </div>
 
-            <main style={{ maxWidth: '900px', margin: '0 auto', padding: '32px' }}>
+            <main className="content-container" style={{ maxWidth: '900px' }}>
+                {/* Error state */}
+                {error && (
+                    <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '12px 16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px' }}>
+                        {error}
+                    </div>
+                )}
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '240px' }}>
                         <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>
-                            {subject?.name}
+                            {loading ? <div style={{ ...skeletonBox, width: '200px', height: '28px' }} /> : subject?.name}
                         </h1>
                         {subject?.description && (
                             <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>{subject.description}</p>
                         )}
                         <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>
-                            {total} {total === 1 ? 'topic' : 'topics'}
-                            {inProgress > 0 && <span style={{ marginLeft: '8px', color: '#f59e0b' }}>· {inProgress} in progress</span>}
+                            {loading ? <span style={{ ...skeletonBox, width: '80px', height: '14px', display: 'inline-block' }} /> : (
+                                <>
+                                    {total} {total === 1 ? 'topic' : 'topics'}
+                                    {inProgress > 0 && <span style={{ marginLeft: '8px', color: '#f59e0b' }}>· {inProgress} in progress</span>}
+                                </>
+                            )}
                         </p>
 
                         {/* Progress bar — only show when there are topics */}
-                        {total > 0 && (
+                        {!loading && total > 0 && (
                             <div style={{ marginTop: '10px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                                     <span style={{ fontSize: '12px', color: '#64748b' }}>Mastery Progress</span>
@@ -165,14 +176,16 @@ export default function SubjectDetailPage() {
                             </div>
                         )}
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', marginLeft: '16px', flexShrink: 0 }}>
-                        <button onClick={() => setShowImporter(true)} style={ghostBtn}>
-                            📥 Import Syllabus
-                        </button>
-                        <button onClick={() => setAddingTopic(true)} style={primaryBtn}>
-                            + Add Topic
-                        </button>
-                    </div>
+                    {!loading && (
+                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                            <button onClick={() => setShowImporter(true)} style={ghostBtn}>
+                                📥 Import
+                            </button>
+                            <button onClick={() => setAddingTopic(true)} style={primaryBtn}>
+                                + Add Topic
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Add topic form */}
@@ -195,15 +208,27 @@ export default function SubjectDetailPage() {
                     </div>
                 )}
 
+                {/* Skeleton loader for topics */}
+                {loading && (
+                    <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '8px' }}>
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} style={{ display: 'flex', gap: '12px', padding: '12px', alignItems: 'center' }}>
+                                <div style={{ ...skeletonBox, width: '12px', height: '12px', borderRadius: '50%' }} />
+                                <div style={{ ...skeletonBox, width: '60%', height: '14px' }} />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Empty state */}
-                {topicList.length === 0 && !addingTopic && (
+                {!loading && topicList.length === 0 && !addingTopic && !error && (
                     <div style={{ textAlign: 'center', padding: '64px 32px', background: '#fff', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
                         <p style={{ fontSize: '28px', margin: '0 0 8px' }}>📖</p>
                         <p style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>No topics yet</p>
                         <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 16px' }}>
                             Add topics manually or import your syllabus
                         </p>
-                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                             <button onClick={() => setAddingTopic(true)} style={primaryBtn}>+ Add Topic</button>
                             <button onClick={() => setShowImporter(true)} style={ghostBtn}>📥 Import Syllabus</button>
                         </div>
@@ -349,4 +374,11 @@ const ghostBtn: React.CSSProperties = {
 const iconBtn: React.CSSProperties = {
     background: 'transparent', border: 'none', cursor: 'pointer',
     fontSize: '14px', padding: '2px 4px',
+};
+
+const skeletonBox: React.CSSProperties = {
+    background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.4s infinite',
+    borderRadius: '4px',
 };

@@ -17,6 +17,7 @@ export default function Dashboard() {
     const { user, logout } = useAuth();
     const [subjectList, setSubjectList] = useState<Subject[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [sessionRefreshKey, setSessionRefreshKey] = useState(0);
 
@@ -36,12 +37,15 @@ export default function Dashboard() {
     const streak = useStreak(sessionRefreshKey);
 
     useEffect(() => {
+        setLoading(true);
         subjectsApi
             .list()
             .then((res) => {
                 const data = res.data;
                 setSubjectList(Array.isArray(data) ? data : data.results ?? []);
+                setError(null);
             })
+            .catch(() => setError('Failed to load subjects. Please refresh.'))
             .finally(() => setLoading(false));
     }, []);
 
@@ -61,24 +65,24 @@ export default function Dashboard() {
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
             {/* Header */}
-            <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0 32px' }}>
-                <div style={{ maxWidth: '1100px', margin: '0 auto', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ maxWidth: '1100px', margin: '0 auto', height: '60px', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontWeight: 700, fontSize: '18px', color: '#2563EB' }}>SyllabusTracker</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <Link to="/history" style={{ fontSize: '14px', color: '#64748b', textDecoration: 'none', fontWeight: 500 }}>History</Link>
-                        <Link to="/reports" style={{ fontSize: '14px', color: '#64748b', textDecoration: 'none', fontWeight: 500 }}>Reports</Link>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <Link to="/history" style={{ fontSize: '13px', color: '#64748b', textDecoration: 'none', fontWeight: 500 }}>History</Link>
+                        <Link to="/reports" style={{ fontSize: '13px', color: '#64748b', textDecoration: 'none', fontWeight: 500 }}>Reports</Link>
                         <StudyTimerWidget />
                         {user?.avatar_url && (
-                            <img src={user.avatar_url} alt={user.name} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                            <img src={user.avatar_url} alt={user.name} style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'none' }} />
                         )}
-                        <span style={{ fontSize: '14px', color: '#374151' }}>{user?.name || user?.username}</span>
+                        <span style={{ fontSize: '13px', color: '#374151', display: 'none' }}>@{user?.username}</span>
                         <button onClick={logout} style={ghostBtn}>Logout</button>
                     </div>
                 </div>
             </header>
 
             {/* Main */}
-            <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px' }}>
+            <main className="content-container">
 
                 {/* Daily Goal Widget + subjects header row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
@@ -97,21 +101,28 @@ export default function Dashboard() {
                     </div>
                 </div>
 
+                {/* Error state */}
+                {error && (
+                    <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '12px 16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px' }}>
+                        {error}
+                    </div>
+                )}
+
                 {/* Subject grid + overall progress sidebar */}
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                     {/* Subject grid */}
-                    <div style={{ flex: '1 1 520px', minWidth: 0 }}>
+                    <div style={{ flex: '1 1 500px', minWidth: 0 }}>
                         {/* Skeleton loader */}
                         {loading && (
                             <div style={gridStyle}>
-                                {[1, 2, 3].map((i) => (
+                                {[1, 2, 3, 4].map((i) => (
                                     <div key={i} style={{ ...skeletonCard, animationDelay: `${i * 0.1}s` }} />
                                 ))}
                             </div>
                         )}
 
                         {/* Empty state */}
-                        {!loading && subjectList.length === 0 && (
+                        {!loading && subjectList.length === 0 && !error && (
                             <div style={emptyState}>
                                 <p style={{ fontSize: '32px', margin: '0 0 8px' }}>📚</p>
                                 <p style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b', margin: '0 0 4px' }}>No subjects yet</p>
@@ -136,7 +147,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Overall Progress sidebar */}
-                    <div style={{ flex: '0 0 240px', minWidth: '220px' }}>
+                    <div style={{ flex: '1 1 240px' }}>
                         <OverallProgressWidget subjects={subjectList} loading={loading} />
                     </div>
                 </div>
