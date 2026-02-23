@@ -6,7 +6,9 @@ import SubjectCard from '../components/features/SubjectCard';
 import SubjectForm from '../components/features/SubjectForm';
 import StudyTimerWidget from '../components/common/StudyTimerWidget';
 import DailyGoalWidget from '../components/features/DailyGoalWidget';
+import StreakWidget from '../components/features/StreakWidget';
 import { useDailyGoal } from '../hooks/useDailyGoal';
+import { useStreak } from '../hooks/useStreak';
 import { useTimer } from '../context/TimerContext';
 import { Link } from 'react-router-dom';
 
@@ -30,6 +32,7 @@ export default function Dashboard() {
     }, [elapsed, prevElapsed]);
 
     const dailyGoal = useDailyGoal(sessionRefreshKey);
+    const streak = useStreak(sessionRefreshKey);
 
     useEffect(() => {
         subjectsApi
@@ -84,6 +87,7 @@ export default function Dashboard() {
                         </p>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                        <StreakWidget state={streak} />
                         <DailyGoalWidget state={dailyGoal} />
                         <button onClick={() => setShowForm(true)} style={{ ...primaryBtn, alignSelf: 'flex-start', marginTop: '2px' }}>
                             + Add Subject

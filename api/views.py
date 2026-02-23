@@ -1,7 +1,7 @@
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, date
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -72,10 +72,10 @@ class TopicViewSet(viewsets.ModelViewSet):
 
 class SessionViewSet(viewsets.ModelViewSet):
     """
-    GET    /api/sessions/           — list user's sessions
-    GET    /api/sessions/?subject=X — filter by subject ID
-    GET    /api/sessions/?days=N    — filter to last N days
-    POST   /api/sessions/           — log a completed session
+    GET    /api/sessions/           — list user sessions
+    GET    /api/sessions/?subject=X — filter by subject
+    GET    /api/sessions/?days=N    — filter last N days
+    POST   /api/sessions/           — log a session
     No update/delete for MVP.
     """
     serializer_class = StudySessionSerializer
@@ -101,6 +101,40 @@ class SessionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class StreakView(APIView):
+    """
+    GET /api/sessions/streak/
+    Returns { streak: int, studied_today: bool }
+
+    A "streak day" is any calendar day (UTC date) on which the user
+    logged at least one session. Consecutive days counting backwards
+    from today (or yesterday if today has no session yet).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sessions = StudySession.objects.filter(user=request.user)
+        # Unique calendar dates (UTC) with at least one session, newest first
+        unique_dates = sorted(
+            {s.created_at.date() for s in sessions},
+            reverse=True
+        )
+        today = date.today()
+        studied_today = today in unique_dates
+
+        streak = 0
+        check = today if studied_today else today - timedelta(days=1)
+
+        for d in unique_dates:
+            if d == check:
+                streak += 1
+                check -= timedelta(days=1)
+            elif d < check:
+                break  # gap found — streak ends
+
+        return Response({'streak': streak, 'studied_today': studied_today})
 
 
 class ParseSyllabusView(APIView):

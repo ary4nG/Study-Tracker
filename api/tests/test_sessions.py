@@ -87,6 +87,44 @@ class SessionAPITests(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    # ── Streak ─────────────────────────────────────────────────────────────────
+
+    def test_streak_calculated_correctly(self):
+        """AC: Consecutive calendar days build streak; a gap resets it."""
+        self.client.force_login(self.user_a)
+        now = timezone.now()
+
+        # Sessions on 3 consecutive days (today, yesterday, 2 days ago)
+        for days_ago in [0, 1, 2]:
+            s = StudySession.objects.create(
+                user=self.user_a, subject=self.subject,
+                start_time=now - timezone.timedelta(days=days_ago, hours=1),
+                end_time=now - timezone.timedelta(days=days_ago),
+                duration_seconds=3600,
+            )
+            # Force created_at to the correct historical date
+            s.created_at = now - timezone.timedelta(days=days_ago)
+            s.save()
+
+        response = self.client.get('/api/sessions/streak/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(data['streak'], 3)
+        self.assertTrue(data['studied_today'])
+
+        # Add a session 5 days ago (creates a gap) — streak should still be 3
+        old = StudySession.objects.create(
+            user=self.user_a, subject=self.subject,
+            start_time=now - timezone.timedelta(days=5),
+            end_time=now - timezone.timedelta(days=5),
+            duration_seconds=1800,
+        )
+        old.created_at = now - timezone.timedelta(days=5)
+        old.save()
+        response2 = self.client.get('/api/sessions/streak/')
+        self.assertEqual(response2.json()['streak'], 3)  # gap at day 3 stops the count
+
+
     # ── Filters ───────────────────────────────────────────────────────────────
 
     def test_filter_sessions_by_subject(self):
