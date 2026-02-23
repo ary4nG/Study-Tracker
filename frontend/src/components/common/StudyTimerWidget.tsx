@@ -29,7 +29,7 @@ export default function StudyTimerWidget() {
     if (!hasStarted) {
         return (
             <button onClick={start} style={startBtnStyle}>
-                ▶ Start Study Session
+                ▶ Study
             </button>
         );
     }
@@ -69,7 +69,7 @@ export default function StudyTimerWidget() {
 
 // ── Styles ─────────────────────────────────────────────────────────────────
 const startBtnStyle: React.CSSProperties = {
-    padding: '8px 16px',
+    padding: '7px 14px',
     background: '#2563EB',
     color: '#fff',
     border: 'none',
@@ -77,9 +77,6 @@ const startBtnStyle: React.CSSProperties = {
     fontWeight: 600,
     fontSize: '13px',
     cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
     whiteSpace: 'nowrap',
 };
 
