@@ -28,6 +28,12 @@ class Topic(models.Model):
         ('mastered', 'Mastered'),
     ]
 
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    ]
+
     subject = models.ForeignKey(
         Subject,
         on_delete=models.CASCADE,
@@ -38,6 +44,12 @@ class Topic(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default='not_started',
+    )
+    difficulty = models.CharField(
+        max_length=10,
+        choices=DIFFICULTY_CHOICES,
+        default='medium',
+        blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

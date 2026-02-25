@@ -5,6 +5,7 @@ from .views import (
     UserDetailView, LogoutView,
     SubjectViewSet, TopicViewSet, SessionViewSet,
     StreakView, WeeklyReportView, ParseSyllabusView,
+    AIParseSyllabusView, RecommendTopicView,
 )
 
 router = DefaultRouter()
@@ -16,6 +17,8 @@ urlpatterns = [
     path('auth/user/', UserDetailView.as_view(), name='user-detail'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('subjects/<int:subject_id>/parse-syllabus/', ParseSyllabusView.as_view(), name='parse-syllabus'),
+    path('subjects/<int:subject_id>/ai-parse-syllabus/', AIParseSyllabusView.as_view(), name='ai-parse-syllabus'),
+    path('subjects/<int:subject_id>/recommend-topic/', RecommendTopicView.as_view(), name='recommend-topic'),
     # Static paths before router to avoid PK conflicts
     path('sessions/streak/', StreakView.as_view(), name='session-streak'),
     path('reports/weekly/', WeeklyReportView.as_view(), name='weekly-report'),

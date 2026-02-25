@@ -42,11 +42,20 @@ export const topics = {
     update: (id: number, data: Partial<Topic>) =>
         API.patch(`/api/topics/${id}/`, data),
     remove: (id: number) => API.delete(`/api/topics/${id}/`),
+    recommend: (subjectId: number) =>
+        API.get(`/api/subjects/${subjectId}/recommend-topic/`),
 };
 
 export const syllabusParser = {
     save: (subjectId: number, topicNames: string[]) =>
         API.post(`/api/subjects/${subjectId}/parse-syllabus/`, { topics: topicNames }),
+    aiParse: (subjectId: number, file: File) => {
+        const form = new FormData();
+        form.append('file', file);
+        return API.post(`/api/subjects/${subjectId}/ai-parse-syllabus/`, form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
 };
 
 export interface SessionPayload {

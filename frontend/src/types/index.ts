@@ -30,6 +30,7 @@ export interface Topic {
   subject: number;
   name: string;
   status: 'not_started' | 'in_progress' | 'mastered';
+  difficulty: 'easy' | 'medium' | 'hard';
   created_at: string;
   updated_at: string;
 }

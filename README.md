@@ -1,6 +1,6 @@
 # SyllabusTracker
 
-A study tracking web app built with Django + React. Log study sessions, track topic mastery, set daily goals, monitor streaks, and review weekly progress.
+A study tracking web app built with Django + React. Log study sessions, track topic mastery, set daily goals, monitor streaks, and review weekly progress — now with **AI-powered syllabus parsing** and **smart topic recommendations**.
 
 ---
 
@@ -8,6 +8,8 @@ A study tracking web app built with Django + React. Log study sessions, track to
 
 - **GitHub OAuth login** — sign in with your GitHub account
 - **Subjects & Topics** — create subjects, import topics from a syllabus, mark topics as Not Started / In Progress / Mastered
+- **✨ AI Syllabus Parser** — upload a PDF syllabus; LLaMA-3.1 extracts topics and assigns difficulty (Easy / Medium / Hard) automatically
+- **🎯 Daily Focus** — smart recommendation engine surfaces the best topic to study next based on progress and difficulty
 - **Study Timer** — global persistent timer with start / pause / end session flow
 - **Session History** — filterable log of all past sessions (by subject + date range)
 - **Daily Goal** — set a minute target, see a live progress bar update after each session
@@ -50,6 +52,8 @@ For higher loads, replace SQLite with PostgreSQL by setting `DATABASE_URL` in yo
 | Database | SQLite (dev) |
 | Frontend | React 19 · TypeScript · Vite · React Router |
 | Auth | GitHub OAuth 2.0 + session cookie |
+| AI | Groq `llama-3.1-8b-instant` (free, 14,400 req/day) |
+| PDF Parsing | `pypdf` |
 | Styling | Inline React styles + pure SVG charts |
 
 ---
@@ -83,6 +87,7 @@ SECRET_KEY=your-django-secret-key
 DEBUG=True
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
+GROQ_API_KEY=your-groq-api-key    # free at https://console.groq.com
 ```
 
 ```bash
@@ -116,17 +121,18 @@ Open [http://localhost:5173](http://localhost:5173)
 ```
 SyllabusTrackingApp/
 ├── api/                  # Django app — models, views, serializers, tests
-│   ├── models.py         # Subject, Topic, StudySession
-│   ├── views.py          # REST endpoints + StreakView + WeeklyReportView
+│   ├── models.py         # Subject, Topic (+ difficulty), StudySession
+│   ├── views.py          # REST endpoints + AI parse + recommendation
+│   ├── ai_parser.py      # Groq LLaMA-3.1 integration & topic extraction
 │   ├── serializers.py
 │   └── tests/
 ├── frontend/src/
 │   ├── pages/            # Dashboard, SubjectDetail, History, Reports, Login
 │   ├── components/
-│   │   ├── features/     # SubjectCard, DailyGoalWidget, StreakWidget, ...
+│   │   ├── features/     # SyllabusImporter (AI+manual), DailyFocusWidget, ...
 │   │   ├── charts/       # StudyTimeDonutChart, MasteredBarChart
 │   │   └── common/       # StudyTimerWidget, ProtectedRoute
-│   ├── hooks/            # useTimer, useDailyGoal, useStreak, useWeeklyReport, ...
+│   ├── hooks/            # useDailyGoal, useStreak, useWeeklyReport, ...
 │   ├── context/          # AuthContext, TimerContext
 │   └── services/api.ts   # Axios API client
 └── requirements.txt
@@ -141,10 +147,12 @@ SyllabusTrackingApp/
 | GET | `/api/auth/user/` | Current user info |
 | GET/POST | `/api/subjects/` | List / create subjects |
 | GET/POST | `/api/topics/` | List / create topics |
-| PATCH | `/api/topics/:id/` | Update topic (incl. status) |
+| PATCH | `/api/topics/:id/` | Update topic (incl. status & difficulty) |
 | GET/POST | `/api/sessions/` | List / log sessions |
 | GET | `/api/sessions/streak/` | Current streak |
 | GET | `/api/reports/weekly/?week=YYYY-WW` | Weekly report data |
+| POST | `/api/subjects/:id/ai-parse-syllabus/` | Upload PDF → AI extract topics + difficulty |
+| GET | `/api/subjects/:id/recommend-topic/` | Get next recommended topic |
 
 ---
 
@@ -155,4 +163,4 @@ source venv/bin/activate
 python manage.py test api
 ```
 
-43 tests · 0 failures
+52 tests · 0 failures

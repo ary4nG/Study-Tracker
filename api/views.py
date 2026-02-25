@@ -1,14 +1,19 @@
+import io
+
 from django.contrib.auth import logout
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta, date, datetime
 from rest_framework import status, viewsets
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from pypdf import PdfReader
 
 from .models import Subject, Topic, StudySession
 from .serializers import SubjectSerializer, TopicSerializer, StudySessionSerializer
+from .ai_parser import parse_syllabus_with_ai
 
 
 class UserDetailView(APIView):
@@ -208,3 +213,118 @@ class ParseSyllabusView(APIView):
         topics = Topic.objects.bulk_create([Topic(subject=subject, name=name) for name in cleaned])
         serializer = TopicSerializer(topics, many=True)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class AIParseSyllabusView(APIView):
+    """
+    POST /api/subjects/{id}/ai-parse-syllabus/
+
+    Accepts a PDF file via multipart/form-data (field name: 'file').
+    Extracts the text from the PDF, sends it to Google Gemini (gemini-2.0-flash-lite,
+    free tier), and bulk-creates Topic objects with AI-assigned difficulty ratings.
+
+    Returns the list of created Topic objects.
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, subject_id):
+        subject = get_object_or_404(Subject, pk=subject_id, user=request.user)
+
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return Response(
+                {'error': 'No file uploaded. Send a PDF under the \'file\' field.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate file type
+        filename = uploaded_file.name.lower()
+        if not filename.endswith('.pdf'):
+            return Response(
+                {'error': 'Only PDF files are supported.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Extract text from PDF
+        try:
+            reader = PdfReader(io.BytesIO(uploaded_file.read()))
+            pages_text = [page.extract_text() or '' for page in reader.pages]
+            raw_text = '\n'.join(pages_text).strip()
+        except Exception as exc:
+            return Response(
+                {'error': f'Could not read PDF: {exc}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not raw_text:
+            return Response(
+                {'error': 'The PDF appears to be empty or image-only (no extractable text).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Send to Gemini
+        try:
+            parsed_topics = parse_syllabus_with_ai(raw_text)
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except RuntimeError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+
+        if not parsed_topics:
+            return Response(
+                {'error': 'AI could not extract any topics from the provided PDF.'},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+
+        # Bulk create Topic objects
+        topics = Topic.objects.bulk_create([
+            Topic(subject=subject, name=item['name'], difficulty=item['difficulty'])
+            for item in parsed_topics
+        ])
+
+        serializer = TopicSerializer(topics, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class RecommendTopicView(APIView):
+    """
+    GET /api/subjects/{id}/recommend-topic/
+
+    Returns a single recommended Topic for the student to focus on next.
+
+    Algorithm (no external AI required — pure heuristic):
+      1. Exclude mastered topics.
+      2. Prioritise "in_progress" over "not_started" (finish what you started).
+      3. Within each group, rank easy → medium → hard (build momentum, avoid overwhelm).
+      4. Use syllabus insertion order as the final tiebreaker (natural order matters).
+
+    Returns 200 with the topic, or 204 No Content if all topics are mastered / none exist.
+    """
+    permission_classes = [IsAuthenticated]
+
+    # Difficulty score: lower = higher priority (easy first)
+    DIFFICULTY_SCORE = {'easy': 0, 'medium': 1, 'hard': 2}
+    # Status score: lower = higher priority (in_progress first)
+    STATUS_SCORE = {'in_progress': 0, 'not_started': 1}
+
+    def get(self, request, subject_id):
+        subject = get_object_or_404(Subject, pk=subject_id, user=request.user)
+
+        candidates = list(
+            Topic.objects.filter(subject=subject)
+            .exclude(status='mastered')
+            .order_by('id')  # syllabus order as base
+        )
+
+        if not candidates:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        def score(topic: Topic):
+            status_rank = self.STATUS_SCORE.get(topic.status, 2)
+            difficulty_rank = self.DIFFICULTY_SCORE.get(topic.difficulty, 1)
+            return (status_rank, difficulty_rank)
+
+        recommended = min(candidates, key=score)
+        serializer = TopicSerializer(recommended)
+        return Response(serializer.data, status=status.HTTP_200_OK)

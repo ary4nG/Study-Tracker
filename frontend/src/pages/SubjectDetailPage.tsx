@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { subjects as subjectsApi, topics as topicsApi } from '../services/api';
 import type { Subject, Topic } from '../types';
 import SyllabusImporter from '../components/features/SyllabusImporter';
+import DailyFocusWidget from '../components/features/DailyFocusWidget';
 import StudyTimerWidget from '../components/common/StudyTimerWidget';
 import { cycleStatus, statusColor, nextStatusLabel } from '../utils/cycleStatus';
 
@@ -233,6 +234,18 @@ export default function SubjectDetailPage() {
                             <button onClick={() => setShowImporter(true)} style={ghostBtn}>📥 Import Syllabus</button>
                         </div>
                     </div>
+                )}
+
+                {/* Daily Focus Recommendation */}
+                {!loading && topicList.length > 0 && (
+                    <DailyFocusWidget
+                        subjectId={subjectId}
+                        topicList={topicList}
+                        onStartStudying={(topic) => {
+                            // Mark as in_progress if not started
+                            if (topic.status === 'not_started') handleStatusClick(topic);
+                        }}
+                    />
                 )}
 
                 {/* Topic list */}
